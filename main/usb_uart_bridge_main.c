@@ -26,6 +26,8 @@ static const char *TAG = "USB2UART";
 #define BOARD_UART_RXD_PIN     CONFIG_BOARD_UART_RXD_PIN
 #define UART_RX_BUF_SIZE       CONFIG_UART_RX_BUF_SIZE
 #define UART_TX_BUF_SIZE       CONFIG_UART_TX_BUF_SIZE
+#define USB_TASK_STACK         (16 * 1024)
+#define UART_TASK_STACK        (16 * 1024)
 
 #ifdef CONFIG_UART_AUTO_DOWNLOAD
 #define BOARD_AUTODLD_EN_PIN   CONFIG_BOARD_AUTODLD_EN_PIN
@@ -70,7 +72,7 @@ static void board_uart_init(void)
         .parity = CFG_PARITY(s_parity_active),
         .stop_bits = CFG_STOP_BITS(s_stop_bits_active),
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_APB,
+        .source_clk = UART_SCLK_DEFAULT,
     };
 
     uart_driver_install(BOARD_UART_PORT, UART_RX_BUF_SIZE, UART_TX_BUF_SIZE, 0, NULL, 0);
@@ -347,9 +349,9 @@ void app_main(void)
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
 
     TaskHandle_t usb_tx_handle = NULL;
-    xTaskCreate(usb_tx_task, "usb_tx", 4096, NULL, 4, &usb_tx_handle);
+    xTaskCreate(usb_tx_task, "usb_tx", USB_TASK_STACK, NULL, 4, &usb_tx_handle);
     vTaskDelay(pdMS_TO_TICKS(500));
-    xTaskCreate(uart_read_task, "uart_rx", 4096, (void *)usb_tx_handle, 4, NULL);
+    xTaskCreate(uart_read_task, "uart_rx", UART_TASK_STACK, (void *)usb_tx_handle, 4, NULL);
 
     ESP_LOGI(TAG, "USB initialization DONE");
 
